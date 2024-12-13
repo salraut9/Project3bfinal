@@ -1,25 +1,26 @@
 // // Number of cubes per row/column
-let cubeNumber = 3;  
+let cubeNum = 3;  
 
 // Size of each cube
-let boxSize = 50;
+let sizeBox = 50;
 let spacing = 4;
 
 let cubes = [];
-let shift = -0.5 * (boxSize + spacing) * (cubeNumber - 1);
-let m = boxSize + spacing;
-let qTurnTime = 270; // Time in ms
-// Quaternions to represent 90 degree rotations along each axis
-const xQuat = Quaternion.fromAxisAngle([1,0,0], Math.PI/2);
-const yQuat = Quaternion.fromAxisAngle([0,1,0], Math.PI/2);
-const zQuat = Quaternion.fromAxisAngle([0,0,1], Math.PI/2);
+let shift = -0.5 * (sizeBox + spacing) * (cubeNum - 1);
+let spaceSize = sizeBox + spacing;
+let timeTurn = 270;
 
-let selectedAxis  = 0;     // Axis of the cube to rotate
-let selectedIndex = 0;     // Currently selected layer on the selected axis
-let turnAnimStartTime = 0; // Time that selected layer started turning
+
+const Quaternionx = Quaternion.angleAxis([1,0,0], Math.PI/2);
+const Quaterniony = Quaternion.angleAxis([0,1,0], Math.PI/2);
+const Quaternionz = Quaternion.angleAxis([0,0,1], Math.PI/2);
+
+let Axis  = 0;     // Axis of the cube to rotate
+let Index = 0;     // Currently selected layer on the selected axis
+let startTimeTurn = 0; // Time that selected layer started turning
 
 // Tracks the number of rotations to apply and remaining number of turn animations
-let turnCounter = 0;
+let counturn = 0;
 
 function setup() {
   canvas = createCanvas(windowWidth, windowHeight, WEBGL);
@@ -34,7 +35,7 @@ function setup() {
   }
   
   // Start the camera at a fixed position
-  camera(boxSize*4, -boxSize*4, boxSize*4, 0, 0, 0, boxSize, boxSize, boxSize);
+  camera(sizeBox*4, -sizeBox*4, sizeBox*4, 0, 0, 0, sizeBox, sizeBox, sizeBox);
 }
 
 
@@ -43,242 +44,150 @@ function draw() {
   orbitControl(); // to move the cube around
   
   
-  for (const c of cubes) {  
+  for (const cube of cubes) {  
     push();
     
     // Clicked Enter Key
-    if (turnCounter > 0 && isCubeSelected(c)) {
-      rotateAnim();
+    if (counturn > 0 && isCubeSelected(cube)) {
+      rotation();
     }
 
     // Translate so the newest cube being drawn is centered at the origin
     translate(
-      c.xPos * m + shift,
-      c.yPos * m + shift,
-      c.zPos * m + shift
+      cube.xPosition * spaceSize + shift,
+      cube.yPosition * spaceSize + shift,
+      cube.zPosition * spaceSize + shift
     );
     
     // Change stroke color for selected cubes
-    if (isCubeSelected(c)) stroke(0, 255, 255);
+    if (isCubeSelected(cube)) stroke(0, 255, 255);
     else stroke(0); 
 
     // Draw the boxes
-    c.draw();
+    cube.draw();
     pop();
   }
 }
 function keyPressed() {
   const SPACE = (' ').charCodeAt(0); // 32
-  // const ENTER = 13;
 
   //if selected index or axis is changed, apply all rotations
   switch(keyCode) {
     case DOWN_ARROW:
-      // applyAllRotations();
-      
-      selectedIndex = (selectedIndex + 1) % cubeNumber;
+      Index = (Index + 1) % cubeNum;
       
       break;
     
     case UP_ARROW:
-      // applyAllRotations();
-      --selectedIndex;
-      if (selectedIndex < 0) {
-        selectedIndex = cubeNumber - 1;
+      --Index;
+      if (Index < 0) {
+        Index = cubeNum - 1;
       }
       break;
 
     case RIGHT_ARROW:
-      // applyAllRotations();
-      --selectedAxis;      
-      if (selectedAxis < 0) {
-        selectedAxis = 2;
+      --Axis;      
+      if (Axis < 0) {
+        Axis = 2;
       }
       break;
     
     case LEFT_ARROW:
-      // applyAllRotations();
-      selectedAxis = (selectedAxis + 1) % 3;
+      Axis = (Axis + 1) % 3;
       break;
 
     // Rotate the selected face
     case ENTER:
-      if (turnCounter === 0) { // For rotation animation
-        turnAnimStartTime = millis();
+      if (counturn === 0) { // For rotation animation
+        startTimeTurn = millis();
         
       }
-      ++turnCounter;
+      ++counturn;
       break;
       
     // Scramble cube  
     case SPACE:
-      scrambleCube(20);
+      scrambleCube(30);
       break;
   }
 }
 
 // Determine which cubes are selected to rotate
-function isCubeSelected({xPos, yPos, zPos}) {
-  return [xPos, yPos, zPos][selectedAxis] === selectedIndex;
+function isCubeSelected({xPosition, yPosition, zPosition}) {
+  return [xPosition, yPosition, zPosition][Axis] === Index;
 }
 
-
 // Performs the rotation for the animation of the active layer spinning
-function rotateAnim() {
+function rotation() {
   // Rotate for the rotation animation
-  const elapsedTurnTime = millis() - turnAnimStartTime;
+  const elapsedTurnTime = millis() - startTimeTurn;
   
   // so that the cube doesn't infinity keep on rotating
-  if (elapsedTurnTime >= turnCounter * qTurnTime) {
+  if (elapsedTurnTime >= counturn * timeTurn) {
     applyAllRotations();   
   }
   else {
     // Amount the layer should be turned by in radians
-    const turnAmount = elapsedTurnTime / qTurnTime * Math.PI/2;
+    const turnAmount = elapsedTurnTime / timeTurn * Math.PI/2;
     // Call the appropriate rotation function based on the selected axis
    
-    [rotateX, rotateY, rotateZ][selectedAxis](turnAmount);
+    [rotateX, rotateY, rotateZ][Axis](turnAmount);
   }
 }
 
-
 // Applies turn counter rotations to the current selected layer
 function applyAllRotations() {
-  const rotCoords = (x, y) => {
-    return [(cubeNumber - 1) - y, x];
+  const Coordinates = (x, y) => {
+    return [(cubeNum - 1) - y, x];
   }
 
   const selectedCubes = cubes.filter(isCubeSelected);
 
-  while (turnCounter > 0) {
-    --turnCounter;
+  while (counturn > 0) {
+    --counturn;
     
     for (let i = 0; i < selectedCubes.length; i++) {
-      let c = selectedCubes[i];
+      let cube = selectedCubes[i];
       
-      switch(selectedAxis) {
+      switch(Axis) {
         case 0: //x
-          [c.yPos, c.zPos] = rotCoords(c.yPos, c.zPos);
-          c.rot = Quaternion.mult(xQuat, c.rot);
+          [cube.yPosition, cube.zPosition] = Coordinates(cube.yPosition, cube.zPosition);
+          cube.rotation = Quaternion.multiply(Quaternionx, cube.rotation);
           break;
 
         case 1: //y
-          [c.zPos, c.xPos] = rotCoords(c.zPos, c.xPos);
-          c.rot = Quaternion.mult(yQuat, c.rot);
+          [cube.zPosition, cube.xPosition] = Coordinates(cube.zPosition, cube.xPosition);
+          cube.rotation = Quaternion.multiply(Quaterniony, cube.rotation);
           break;
 
         case 2: //z
-          [c.xPos, c.yPos] = rotCoords(c.xPos, c.yPos);
-          c.rot = Quaternion.mult(zQuat, c.rot);
+          [cube.xPosition, cube.yPosition] = Coordinates(cube.xPosition, cube.yPosition);
+          cube.rotation = Quaternion.multiply(Quaternionz, cube.rotation);
           break;
       }
     }
   }
 }
 
-
-
 function scrambleCube(n) {
   
   // Record the currently selected face
-  let axis = selectedAxis;
-  let index = selectedIndex;
-  let turn = turnCounter;
+  let axis = Axis;
+  let index = Index;
+  let turn = counturn;
   
   // Randomly changes the selected face and sets turn counter from 0 to 3
   for (let i = 0; i < n; i++) {
-    selectedAxis = Math.floor(Math.random() * cubeNumber - 1);
-    selectedIndex = Math.floor(Math.random() * cubeNumber - 1);
-    turnCounter = Math.floor(Math.random() * cubeNumber - 1);
+    Axis = Math.floor(Math.random() * cubeNum - 1);
+    Index = Math.floor(Math.random() * cubeNum - 1);
+    counturn = Math.floor(Math.random() * cubeNum - 1);
 
     applyAllRotations();
   }
   
   // Reset selected face
   
-  selectedAxis = axis;
-  selectedIndex = index;
-  turnCounter = turn;
-}class Cube {
-  constructor(x, y, z) {
-    this.xPos = x;
-    this.yPos = y;
-    this.zPos = z;
-    this.rot = new Quaternion();
-    this.calculateColors();
-  }
-
-
-  draw() {
-    const hSize = boxSize / 2;
-    push();
-    const {axis, angle} = this.rot.axisAngle();
-    rotate(angle, axis);
-
-    // Draw the outlines
-    strokeWeight(2);
-    noFill();
-    box(boxSize);
-    strokeWeight(0);
-
-    // Front faces
-    push();
-    translate(0, 0, hSize);
-
-    fill(this.frontColor);
-    plane(boxSize);
-    pop();
-    
-    // Back faces
-    push();
-    rotateY(PI);
-    translate(0, 0, hSize);
-
-    fill(this.backColor);
-    plane(boxSize);
-    pop();
-    
-    // Left faces
-    push();
-    rotateY(3*Math.PI/2);
-    translate(0, 0, hSize);
-
-    fill(this.leftColor);
-    plane(boxSize);
-    pop();
-
-    // Right faces
-    push();
-    rotateY(Math.PI/2);
-    translate(0, 0, hSize);
-
-    fill(this.rightColor);
-    plane(boxSize);
-    pop();
-
-    // Top faces
-    push();
-    translate(0, -hSize, 0);
-    rotateX(Math.PI/2);
-    fill(this.topColor);
-    plane(boxSize);
-
-    // Bottom faces
-    translate(0,0,-boxSize);
-    fill(this.bottomColor);
-    plane(boxSize);
-    pop();
-
-    pop();
-  }
-
-  // Choose the colors of each rubik's cube face
-  calculateColors() {
-    this.bottomColor = [255,255,0];  // Yellow
-    this.frontColor =  [255,0,0]     // Red
-    this.leftColor = [0,255,0];      // Green
-    this.rightColor = [0,0,255]      // Blue
-    this.topColor = [255,255,255];   // White
-    this.backColor = [255,128,0];    // Orange
-  }
+  Axis = axis;
+  Index = index;
+  counturn = turn;
 }
