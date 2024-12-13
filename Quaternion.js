@@ -7,7 +7,7 @@ class Quaternion {
   }
 
   
-  static fromAxisAngle([x, y, z], angle) {
+  static angleAxis([x, y, z], angle) {
     const h = angle/2;
     const s = Math.sin(h);
     return new Quaternion(Math.cos(h), x*s, y*s, z*s);
@@ -15,7 +15,7 @@ class Quaternion {
 
 
   //hamiltonian product
-  static mult(q1, q2) {
+  static multiply(q1, q2) {
     const {w: a1, i: b1, j: c1, k: d1} = q1;
     const {w: a2, i: b2, j: c2, k: d2} = q2;
 
